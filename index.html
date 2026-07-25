@@ -2495,8 +2495,8 @@
         data: {
           labels: talhoesGrafico,
           datasets: [
-            { type:'bar', label:'Produção (Kg Líquido)', data: talhoesGrafico.map(function(k){ return round2(prodPorTalhao[k]||0); }), backgroundColor:'#4c7a34', yAxisID:'y' },
-            { type:'line', label:'Perda (Kg/ha média)', data: talhoesGrafico.map(function(k){ return round2(perdaPorTalhao[k]||0); }), borderColor:'#dba829', backgroundColor:'#dba829', yAxisID:'y1', tension:0.3, pointRadius:4, borderWidth:2 }
+            { type:'bar', label:'Produção (Kg Líquido)', data: talhoesGrafico.map(function(k){ return round2(prodPorTalhao[k]||0); }), backgroundColor:'#4c7a34', yAxisID:'y', order:2 },
+            { type:'line', label:'Perda (Kg/ha média)', data: talhoesGrafico.map(function(k){ return round2(perdaPorTalhao[k]||0); }), borderColor:'#dba829', backgroundColor:'#dba829', yAxisID:'y1', tension:0.3, pointRadius:4, borderWidth:3, order:1 }
           ]
         },
         options: {
