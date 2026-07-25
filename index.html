@@ -217,9 +217,8 @@
 
             <div class="grid">
               <div class="field"><label>Fazenda</label><select id="prFazendaId"><option value="">— selecione —</option></select></div>
-              <div class="field"><label>Talhão</label><select id="prTalhaoId"><option value="">— selecione a fazenda primeiro —</option></select></div>
-              <div class="field"><label>Cultura</label><input type="text" id="prCultura" class="readonly" readonly value="-"></div>
-              <div class="field"><label>Safra</label><input type="text" id="prSafra" class="readonly" readonly value="-"></div>
+              <div class="field"><label>Talhão</label><select id="prTalhaoNome"><option value="">— selecione a fazenda primeiro —</option></select></div>
+              <div class="field full"><label>Cultura / Safra</label><select id="prTalhaoId"><option value="">— selecione o talhão —</option></select></div>
             </div>
             <div class="hint" id="prDadosHint"></div>
 
@@ -322,13 +321,12 @@
           <form id="formPerda" novalidate>
             <div class="grid">
               <div class="field"><label>Fazenda</label><select id="ldFazendaId"><option value="">— selecione —</option></select></div>
-              <div class="field"><label>Talhão</label><select id="ldTalhaoId"><option value="">— selecione a fazenda primeiro —</option></select></div>
+              <div class="field"><label>Talhão</label><select id="ldTalhaoNome"><option value="">— selecione a fazenda primeiro —</option></select></div>
+              <div class="field"><label>Cultura / Safra</label><select id="ldTalhaoId"><option value="">— selecione o talhão —</option></select></div>
               <div class="field"><label>Nº Amostra</label><input type="text" id="ldNumeroAmostra" required></div>
               <div class="field"><label>Data</label><input type="date" id="ldData" required></div>
               <div class="field"><label>Hora</label><input type="time" id="ldHora"></div>
               <div class="field"><label>Área do Talhão (ha)</label><input type="text" id="ldAreaTalhao" class="readonly" readonly value="-"></div>
-              <div class="field"><label>Cultura</label><input type="text" id="ldCultura" class="readonly" readonly value="-"></div>
-              <div class="field"><label>Safra</label><input type="text" id="ldSafra" class="readonly" readonly value="-"></div>
               <div class="field"><label>Variedade</label><input type="text" id="ldVariedade"></div>
               <div class="field"><label>Área Coleta (m²)</label><input type="number" step="0.01" id="ldArea"></div>
               <div class="field"><label>Gramas Coletadas (g)</label><input type="number" step="0.01" id="ldGramas"></div>
@@ -881,20 +879,38 @@
       document.getElementById('ldDadosHint').textContent = (fazendas.length===0 || colheitadeiras.length===0)
         ? '⚠ Cadastre fazendas, talhões e colheitadeiras na aba Dados para poder selecioná-los aqui.' : '';
 
-      atualizarTalhoesDoSelect(document.getElementById('prFazendaId'), document.getElementById('prTalhaoId'));
-      atualizarTalhoesDoSelect(document.getElementById('ldFazendaId'), document.getElementById('ldTalhaoId'));
+      atualizarNomesTalhao(document.getElementById('prFazendaId'), document.getElementById('prTalhaoNome'));
+      atualizarNomesTalhao(document.getElementById('ldFazendaId'), document.getElementById('ldTalhaoNome'));
     });
   }
 
-  function atualizarTalhoesDoSelect(selFazenda, selTalhao){
+  function atualizarNomesTalhao(selFazenda, selNome){
     var fazendaId = selFazenda.value;
     TalhaoDAL.list().then(function(talhoes){
-      var doTalhao = talhoes.filter(function(t){ return t.fazendaId === fazendaId; });
-      var talhaoAtual = selTalhao.value;
-      selTalhao.innerHTML = !fazendaId
+      var vistos = {}, nomes = [];
+      talhoes.forEach(function(t){
+        if(t.fazendaId === fazendaId && !vistos[t.nome]){ vistos[t.nome]=1; nomes.push(t.nome); }
+      });
+      var nomeAtual = selNome.value;
+      selNome.innerHTML = !fazendaId
         ? '<option value="">— selecione a fazenda primeiro —</option>'
-        : '<option value="">— selecione —</option>' + doTalhao.map(function(t){ return '<option value="'+t.id+'">'+escapeHtml(t.nome)+'</option>'; }).join('');
-      if(talhaoAtual) selTalhao.value = talhaoAtual;
+        : '<option value="">— selecione —</option>' + nomes.map(function(n){ return '<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>'; }).join('');
+      if(nomeAtual) selNome.value = nomeAtual;
+    });
+  }
+
+  function atualizarCombosCulturaSafra(selFazenda, selNome, selCombo){
+    var fazendaId = selFazenda.value, nome = selNome.value;
+    TalhaoDAL.list().then(function(talhoes){
+      var combos = talhoes.filter(function(t){ return t.fazendaId === fazendaId && t.nome === nome; });
+      var comboAtual = selCombo.value;
+      selCombo.innerHTML = !nome
+        ? '<option value="">— selecione o talhão —</option>'
+        : '<option value="">— selecione —</option>' + combos.map(function(t){
+            var label = (t.cultura || 'Sem cultura definida') + (t.safra ? ' ('+t.safra+')' : '');
+            return '<option value="'+t.id+'">'+escapeHtml(label)+'</option>';
+          }).join('');
+      if(comboAtual) selCombo.value = comboAtual;
     });
   }
 
@@ -1315,7 +1331,7 @@
   // ABA PERDA
   // =========================================================
   var ld = {};
-  ['ldFazendaId','ldTalhaoId','ldNumeroAmostra','ldData','ldHora','ldAreaTalhao','ldCultura','ldSafra',
+  ['ldFazendaId','ldTalhaoNome','ldTalhaoId','ldNumeroAmostra','ldData','ldHora','ldAreaTalhao',
    'ldVariedade','ldArea','ldGramas','ldGramasHa','ldKgHa','ldOperador','ldMaquinaId']
   .forEach(function(id){ ld[id] = document.getElementById(id); });
 
@@ -1335,22 +1351,29 @@
   function atualizarCamposTalhaoPerda(){
     var talhaoId = ld.ldTalhaoId.value;
     if(!talhaoId){
-      ld.ldAreaTalhao.value='-'; ld.ldCultura.value='-'; ld.ldSafra.value='-';
+      ld.ldAreaTalhao.value='-'; ld.ldAreaTalhao.dataset.raw = 0;
       return;
     }
     TalhaoDAL.list().then(function(talhoes){
       var t = talhoes.find(function(x){ return x.id === talhaoId; });
       if(t){
         ld.ldAreaTalhao.value = fmtNum(t.area,2); ld.ldAreaTalhao.dataset.raw = t.area||0;
-        ld.ldCultura.value = t.cultura || '-';
-        ld.ldSafra.value = t.safra || '-';
       }
       if(!editandoPerdaId){
         proximaAmostraPorTalhao(talhaoId).then(function(n){ ld.ldNumeroAmostra.value = n; });
       }
     });
   }
-  ld.ldFazendaId.addEventListener('change', function(){ atualizarTalhoesDoSelect(ld.ldFazendaId, ld.ldTalhaoId); atualizarCamposTalhaoPerda(); });
+  ld.ldFazendaId.addEventListener('change', function(){
+    ld.ldTalhaoNome.value = '';
+    ld.ldTalhaoId.innerHTML = '<option value="">— selecione o talhão —</option>';
+    atualizarNomesTalhao(ld.ldFazendaId, ld.ldTalhaoNome);
+    atualizarCamposTalhaoPerda();
+  });
+  ld.ldTalhaoNome.addEventListener('change', function(){
+    atualizarCombosCulturaSafra(ld.ldFazendaId, ld.ldTalhaoNome, ld.ldTalhaoId);
+    atualizarCamposTalhaoPerda();
+  });
   ld.ldTalhaoId.addEventListener('change', atualizarCamposTalhaoPerda);
 
   function proximaAmostraPorTalhao(talhaoId){
@@ -1366,8 +1389,9 @@
     document.getElementById('formPerda').reset();
     ld.ldData.value = new Date().toISOString().slice(0,10);
     ld.ldGramasHa.value='0'; ld.ldKgHa.value='0';
-    ld.ldAreaTalhao.value='-'; ld.ldCultura.value='-'; ld.ldSafra.value='-';
-    ld.ldTalhaoId.innerHTML = '<option value="">— selecione a fazenda primeiro —</option>';
+    ld.ldAreaTalhao.value='-'; ld.ldAreaTalhao.dataset.raw = 0;
+    ld.ldTalhaoNome.innerHTML = '<option value="">— selecione a fazenda primeiro —</option>';
+    ld.ldTalhaoId.innerHTML = '<option value="">— selecione o talhão —</option>';
     editandoPerdaId = null;
     document.getElementById('ldTitle').textContent = '📉 Perda';
     document.getElementById('ldBtnSalvar').textContent = 'Salvar perda';
@@ -1380,17 +1404,16 @@
     if(!this.checkValidity()){ this.reportValidity(); return; }
 
     var fazendaOpt = ld.ldFazendaId.options[ld.ldFazendaId.selectedIndex];
-    var talhaoOpt = ld.ldTalhaoId.options[ld.ldTalhaoId.selectedIndex];
     var maquinaOpt = ld.ldMaquinaId.options[ld.ldMaquinaId.selectedIndex];
 
     var registro = {
       fazendaId: ld.ldFazendaId.value || '',
       fazendaNome: ld.ldFazendaId.value ? fazendaOpt.textContent : '',
       talhaoId: ld.ldTalhaoId.value || '',
-      talhaoNome: ld.ldTalhaoId.value ? talhaoOpt.textContent : '',
+      talhaoNome: ld.ldTalhaoNome.value || '',
       areaTalhao: parseFloat(ld.ldAreaTalhao.dataset.raw) || 0,
-      cultura: ld.ldCultura.value === '-' ? '' : ld.ldCultura.value,
-      safra: ld.ldSafra.value === '-' ? '' : ld.ldSafra.value,
+      cultura: '',
+      safra: '',
 
       numeroAmostra: ld.ldNumeroAmostra.value.trim(),
       data: ld.ldData.value,
@@ -1405,8 +1428,13 @@
     registro.gramasHa = registro.area ? round2(10000*registro.gramas/registro.area) : 0;
     registro.kgHa = round2(registro.gramasHa/1000);
 
-    var acao = editandoPerdaId ? PerdaDAL.update(editandoPerdaId, registro) : PerdaDAL.add(registro);
-    acao.then(function(){ limparFormPerda(); renderPerdas(); refreshDashboardFiltros(); });
+    TalhaoDAL.list().then(function(talhoes){
+      var t = talhoes.find(function(x){ return x.id === registro.talhaoId; });
+      registro.cultura = t ? (t.cultura||'') : '';
+      registro.safra = t ? (t.safra||'') : '';
+      var acao = editandoPerdaId ? PerdaDAL.update(editandoPerdaId, registro) : PerdaDAL.add(registro);
+      acao.then(function(){ limparFormPerda(); renderPerdas(); refreshDashboardFiltros(); });
+    });
   });
 
   window.editarPerda = function(id){
@@ -1414,12 +1442,14 @@
       var c = lista.find(function(x){ return x.id === id; });
       if(!c) return;
       ld.ldFazendaId.value = c.fazendaId || '';
-      atualizarTalhoesDoSelect(ld.ldFazendaId, ld.ldTalhaoId);
+      atualizarNomesTalhao(ld.ldFazendaId, ld.ldTalhaoNome);
       setTimeout(function(){
-        ld.ldTalhaoId.value = c.talhaoId || '';
-        ld.ldAreaTalhao.value = c.areaTalhao ? fmtNum(c.areaTalhao,2) : '-'; ld.ldAreaTalhao.dataset.raw = c.areaTalhao||0;
-        ld.ldCultura.value = c.cultura || '-';
-        ld.ldSafra.value = c.safra || '-';
+        ld.ldTalhaoNome.value = c.talhaoNome || '';
+        atualizarCombosCulturaSafra(ld.ldFazendaId, ld.ldTalhaoNome, ld.ldTalhaoId);
+        setTimeout(function(){
+          ld.ldTalhaoId.value = c.talhaoId || '';
+          ld.ldAreaTalhao.value = c.areaTalhao ? fmtNum(c.areaTalhao,2) : '-'; ld.ldAreaTalhao.dataset.raw = c.areaTalhao||0;
+        }, 50);
       }, 50);
       ld.ldNumeroAmostra.value = c.numeroAmostra;
       ld.ldData.value = c.data;
@@ -1465,28 +1495,31 @@
     return out;
   }
 
-  function refreshDashboardFiltros(){
-    PerdaDAL.list().then(function(todas){
-      var fazendaAtual = dashFazenda.value, safraAtual = dashSafra.value, culturaAtual = dashCultura.value;
+  function popularFiltroPorCadastro(selFazenda, selSafra, selCultura, callback){
+    Promise.all([FazendaDAL.list(), TalhaoDAL.list()]).then(function(r){
+      var fazendas = r[0], talhoes = r[1];
+      var fazendaAtual = selFazenda.value, safraAtual = selSafra.value, culturaAtual = selCultura.value;
 
-      var fazendas = [];
-      var vistos = {};
-      todas.forEach(function(p){ if(p.fazendaId && !vistos[p.fazendaId]){ vistos[p.fazendaId]=1; fazendas.push({id:p.fazendaId, nome:p.fazendaNome}); } });
-      dashFazenda.innerHTML = '<option value="">— Todas —</option>' + fazendas.map(function(f){ return '<option value="'+f.id+'">'+escapeHtml(f.nome)+'</option>'; }).join('');
-      dashFazenda.value = fazendaAtual;
+      selFazenda.innerHTML = '<option value="">— Todas —</option>' +
+        fazendas.map(function(f){ return '<option value="'+f.id+'">'+escapeHtml(f.nome)+'</option>'; }).join('');
+      selFazenda.value = fazendaAtual;
 
-      var escopoFazenda = dashFazenda.value ? todas.filter(function(p){ return p.fazendaId===dashFazenda.value; }) : todas;
+      var escopoFazenda = selFazenda.value ? talhoes.filter(function(t){ return t.fazendaId===selFazenda.value; }) : talhoes;
       var safras = opcoesUnicas(escopoFazenda, 'safra');
-      dashSafra.innerHTML = '<option value="">— Todas —</option>' + safras.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
-      dashSafra.value = safraAtual;
+      selSafra.innerHTML = '<option value="">— Todas —</option>' + safras.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
+      selSafra.value = safraAtual;
 
-      var escopoSafra = dashSafra.value ? escopoFazenda.filter(function(p){ return p.safra===dashSafra.value; }) : escopoFazenda;
+      var escopoSafra = selSafra.value ? escopoFazenda.filter(function(t){ return t.safra===selSafra.value; }) : escopoFazenda;
       var culturas = opcoesUnicas(escopoSafra, 'cultura');
-      dashCultura.innerHTML = '<option value="">— Todas —</option>' + culturas.map(function(c){ return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>'; }).join('');
-      dashCultura.value = culturaAtual;
+      selCultura.innerHTML = '<option value="">— Todas —</option>' + culturas.map(function(c){ return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>'; }).join('');
+      selCultura.value = culturaAtual;
 
-      calcularDashboard();
+      if(callback) callback();
     });
+  }
+
+  function refreshDashboardFiltros(){
+    return popularFiltroPorCadastro(dashFazenda, dashSafra, dashCultura, calcularDashboard);
   }
 
   function calcularDashboard(){
@@ -1600,7 +1633,7 @@
   // ABA CARREGAMENTO = PRODUÇÃO
   // =========================================================
   var pr = {};
-  ['prFazendaId','prTalhaoId','prCliente','prNumeroCarga','prNumeroRomaneio','prPlaca','prMotorista',
+  ['prFazendaId','prTalhaoNome','prTalhaoId','prCliente','prNumeroCarga','prNumeroRomaneio','prPlaca','prMotorista',
    'prPesoBrutoCaminhao','prTara','prPesoBrutoCarga',
    'prUmidade','prDescUmidade','prImpureza','prDescImpureza','prAvariados','prDescAvariados',
    'prTxServico','prLocalEntrega','prObservacao','prPesoDescontoTotal','prPesoLiquido','prSacas']
@@ -1609,17 +1642,14 @@
   var editandoProducaoId = null;
   var prPesoHint = document.getElementById('prPesoHint');
 
-  pr.prFazendaId.addEventListener('change', function(){ atualizarTalhoesDoSelect(pr.prFazendaId, pr.prTalhaoId); });
-  pr.prTalhaoId.addEventListener('change', atualizarCulturaSafraProducao);
-  function atualizarCulturaSafraProducao(){
-    var talhaoId = pr.prTalhaoId.value;
-    if(!talhaoId){ document.getElementById('prCultura').value='-'; document.getElementById('prSafra').value='-'; return; }
-    TalhaoDAL.list().then(function(talhoes){
-      var t = talhoes.find(function(x){ return x.id === talhaoId; });
-      document.getElementById('prCultura').value = t && t.cultura ? t.cultura : '-';
-      document.getElementById('prSafra').value = t && t.safra ? t.safra : '-';
-    });
-  }
+  pr.prFazendaId.addEventListener('change', function(){
+    pr.prTalhaoNome.value = '';
+    pr.prTalhaoId.innerHTML = '<option value="">— selecione o talhão —</option>';
+    atualizarNomesTalhao(pr.prFazendaId, pr.prTalhaoNome);
+  });
+  pr.prTalhaoNome.addEventListener('change', function(){
+    atualizarCombosCulturaSafra(pr.prFazendaId, pr.prTalhaoNome, pr.prTalhaoId);
+  });
 
   function recalcPesoBrutoCarga(){
     var bruto = parseFloat(pr.prPesoBrutoCaminhao.value) || 0;
@@ -1806,9 +1836,8 @@
     fotoPreview.style.display='none'; fotoBox.classList.remove('has-img');
     fotoStatus.textContent = 'Tire uma foto do ticket ou selecione da galeria — os campos abaixo preenchem sozinhos.';
     fotoStatus.className = 'foto-status';
-    pr.prTalhaoId.innerHTML = '<option value="">— selecione a fazenda primeiro —</option>';
-    document.getElementById('prCultura').value = '-';
-    document.getElementById('prSafra').value = '-';
+    pr.prTalhaoNome.innerHTML = '<option value="">— selecione a fazenda primeiro —</option>';
+    pr.prTalhaoId.innerHTML = '<option value="">— selecione o talhão —</option>';
     editandoProducaoId = null;
     document.getElementById('prTitle').textContent = '🚛 Produção';
     document.getElementById('prBtnSalvar').textContent = 'Salvar produção';
@@ -1821,13 +1850,12 @@
     if(!this.checkValidity()){ this.reportValidity(); return; }
 
     var fazendaOpt = pr.prFazendaId.options[pr.prFazendaId.selectedIndex];
-    var talhaoOpt = pr.prTalhaoId.options[pr.prTalhaoId.selectedIndex];
 
     var registro = {
       fazendaId: pr.prFazendaId.value || '',
       fazendaNome: pr.prFazendaId.value ? fazendaOpt.textContent : '',
       talhaoId: pr.prTalhaoId.value || '',
-      talhaoNome: pr.prTalhaoId.value ? talhaoOpt.textContent : '',
+      talhaoNome: pr.prTalhaoNome.value || '',
 
       cliente: pr.prCliente.value.trim(),
       numeroCarga: pr.prNumeroCarga.value.trim(),
@@ -1865,10 +1893,12 @@
       var c = lista.find(function(x){ return x.id === id; });
       if(!c) return;
       pr.prFazendaId.value = c.fazendaId || '';
-      atualizarTalhoesDoSelect(pr.prFazendaId, pr.prTalhaoId);
-      setTimeout(function(){ pr.prTalhaoId.value = c.talhaoId || ''; }, 50);
-      document.getElementById('prCultura').value = c.cultura || '-';
-      document.getElementById('prSafra').value = c.safra || '-';
+      atualizarNomesTalhao(pr.prFazendaId, pr.prTalhaoNome);
+      setTimeout(function(){
+        pr.prTalhaoNome.value = c.talhaoNome || '';
+        atualizarCombosCulturaSafra(pr.prFazendaId, pr.prTalhaoNome, pr.prTalhaoId);
+        setTimeout(function(){ pr.prTalhaoId.value = c.talhaoId || ''; }, 50);
+      }, 50);
 
       pr.prCliente.value = c.cliente || '';
       pr.prNumeroCarga.value = c.numeroCarga || '';
@@ -1915,26 +1945,7 @@
   var dpCultura = document.getElementById('dpCultura');
 
   function refreshDashboardProducaoFiltros(){
-    ProducaoDAL.list().then(function(todas){
-      var fazendaAtual = dpFazenda.value, safraAtual = dpSafra.value, culturaAtual = dpCultura.value;
-
-      var fazendas = [], vistos = {};
-      todas.forEach(function(p){ if(p.fazendaId && !vistos[p.fazendaId]){ vistos[p.fazendaId]=1; fazendas.push({id:p.fazendaId, nome:p.fazendaNome}); } });
-      dpFazenda.innerHTML = '<option value="">— Todas —</option>' + fazendas.map(function(f){ return '<option value="'+f.id+'">'+escapeHtml(f.nome)+'</option>'; }).join('');
-      dpFazenda.value = fazendaAtual;
-
-      var escopoFazenda = dpFazenda.value ? todas.filter(function(p){ return p.fazendaId===dpFazenda.value; }) : todas;
-      var safras = opcoesUnicas(escopoFazenda, 'safra');
-      dpSafra.innerHTML = '<option value="">— Todas —</option>' + safras.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
-      dpSafra.value = safraAtual;
-
-      var escopoSafra = dpSafra.value ? escopoFazenda.filter(function(p){ return p.safra===dpSafra.value; }) : escopoFazenda;
-      var culturas = opcoesUnicas(escopoSafra, 'cultura');
-      dpCultura.innerHTML = '<option value="">— Todas —</option>' + culturas.map(function(c){ return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>'; }).join('');
-      dpCultura.value = culturaAtual;
-
-      calcularDashboardProducao();
-    });
+    return popularFiltroPorCadastro(dpFazenda, dpSafra, dpCultura, calcularDashboardProducao);
   }
 
   function calcularDashboardProducao(){
@@ -2331,26 +2342,7 @@
   var dgCultura = document.getElementById('dgCultura');
 
   function refreshDashboardGeralFiltros(){
-    return ProducaoDAL.list().then(function(todas){
-      var fazendaAtual = dgFazenda.value, safraAtual = dgSafra.value, culturaAtual = dgCultura.value;
-
-      var fazendas = [], vistos = {};
-      todas.forEach(function(p){ if(p.fazendaId && !vistos[p.fazendaId]){ vistos[p.fazendaId]=1; fazendas.push({id:p.fazendaId, nome:p.fazendaNome}); } });
-      dgFazenda.innerHTML = '<option value="">— Todas —</option>' + fazendas.map(function(f){ return '<option value="'+f.id+'">'+escapeHtml(f.nome)+'</option>'; }).join('');
-      dgFazenda.value = fazendaAtual;
-
-      var escopoFazenda = dgFazenda.value ? todas.filter(function(p){ return p.fazendaId===dgFazenda.value; }) : todas;
-      var safras = opcoesUnicas(escopoFazenda, 'safra');
-      dgSafra.innerHTML = '<option value="">— Todas —</option>' + safras.map(function(s){ return '<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; }).join('');
-      dgSafra.value = safraAtual;
-
-      var escopoSafra = dgSafra.value ? escopoFazenda.filter(function(p){ return p.safra===dgSafra.value; }) : escopoFazenda;
-      var culturas = opcoesUnicas(escopoSafra, 'cultura');
-      dgCultura.innerHTML = '<option value="">— Todas —</option>' + culturas.map(function(c){ return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>'; }).join('');
-      dgCultura.value = culturaAtual;
-
-      refreshDashboardGeral();
-    });
+    return popularFiltroPorCadastro(dgFazenda, dgSafra, dgCultura, refreshDashboardGeral);
   }
 
   function refreshDashboardGeral(){
