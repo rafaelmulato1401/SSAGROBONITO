@@ -544,7 +544,7 @@
   </main>
 </div>
 
-<canvas id="chartParetoPdf" width="900" height="480" style="position:absolute;left:-9999px;top:-9999px;"></canvas>
+<canvas id="chartParetoPdf" width="900" height="510" style="position:absolute;left:-9999px;top:-9999px;"></canvas>
 
 <!-- MODAL FILTROS DO PDF -->
 <div class="overlay" id="pdfFiltroOverlay">
@@ -2516,7 +2516,10 @@
             x: { ticks: { callback: function(value, index){
               var nome = talhoesGrafico[index];
               var sacas = Math.floor((prodPorTalhao[nome]||0)/60);
-              return [nome, fmtNum(sacas,0) + ' sc'];
+              var t = talhoes.find(function(x){ return x.nome === nome; });
+              var area = t ? (t.area||0) : 0;
+              var sacasHa = area ? (sacas/area) : 0;
+              return [nome, fmtNum(sacas,0) + ' sc', fmtNum(sacasHa,2) + ' sc/ha'];
             } } },
             y: { type:'linear', position:'left', title:{display:true,text:'Produção (Kg)'} },
             y1: { type:'linear', position:'right', title:{display:true,text:'Perda (Kg/ha)'}, grid:{drawOnChartArea:false} }
@@ -2536,7 +2539,7 @@
         doc.text('PRODUCAO x PERDA POR TALHAO', 14, y); y += 6;
 
         var imgWidth = pageWidth - 28;
-        var imgHeight = imgWidth * (480/900);
+        var imgHeight = imgWidth * (510/900);
         if(y + imgHeight > 285){ doc.addPage(); y = 18; }
         doc.addImage(imgData, 'PNG', 14, y, imgWidth, imgHeight);
 
