@@ -2457,6 +2457,8 @@
         theme:'grid', headStyles:{fillColor:[31,58,31]}, styles:{fontSize:9}, margin:{left:14,right:14}
       });
 
+      y = doc.lastAutoTable.finalY + 10;
+
       // ---- GRÁFICO: PRODUÇÃO x PERDA POR TALHÃO ----
       var prodPorTalhao = {};
       producoes.forEach(function(c){
@@ -2512,7 +2514,7 @@
 
       setTimeout(function(){
         var imgData = canvasGrafico.toDataURL('image/png');
-        if(y > 235){ doc.addPage(); y = 18; } else { y += 10; }
+        if(y > 235){ doc.addPage(); y = 18; }
         doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(31,58,31);
         doc.text('PRODUCAO x PERDA POR TALHAO', 14, y); y += 6;
 
