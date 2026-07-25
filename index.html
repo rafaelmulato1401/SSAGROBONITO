@@ -16,6 +16,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -2491,23 +2492,32 @@
       var canvasGrafico = document.getElementById('chartParetoPdf');
       var ctxGrafico = canvasGrafico.getContext('2d');
       if(window._chartParetoInstance){ window._chartParetoInstance.destroy(); }
+      if(typeof ChartDataLabels !== 'undefined' && !window._datalabelsRegistrado){
+        Chart.register(ChartDataLabels);
+        window._datalabelsRegistrado = true;
+      }
+
       window._chartParetoInstance = new Chart(ctxGrafico, {
         data: {
           labels: talhoesGrafico,
           datasets: [
-            { type:'bar', label:'Produção (Kg Líquido)', data: talhoesGrafico.map(function(k){ return round2(prodPorTalhao[k]||0); }), backgroundColor:'#4c7a34', yAxisID:'y', order:2 },
-            { type:'line', label:'Perda (Kg/ha média)', data: talhoesGrafico.map(function(k){ return round2(perdaPorTalhao[k]||0); }), borderColor:'#dba829', backgroundColor:'#dba829', yAxisID:'y1', tension:0.3, pointRadius:4, borderWidth:3, order:1 }
+            { type:'bar', label:'Produção (Kg Líquido)', data: talhoesGrafico.map(function(k){ return round2(prodPorTalhao[k]||0); }), backgroundColor:'#4c7a34', yAxisID:'y', order:2,
+              datalabels: { anchor:'end', align:'top', color:'#1f3a1f', font:{weight:'bold', size:10}, formatter: function(v){ return fmtNum(v,0); } } },
+            { type:'line', label:'Perda (Kg/ha média)', data: talhoesGrafico.map(function(k){ return round2(perdaPorTalhao[k]||0); }), borderColor:'#dba829', backgroundColor:'#dba829', yAxisID:'y1', tension:0.3, pointRadius:4, borderWidth:3, order:1,
+              datalabels: { anchor:'end', align:'top', color:'#8a6a10', font:{weight:'bold', size:10}, formatter: function(v){ return fmtNum(v,1); } } }
           ]
         },
         options: {
           responsive:false, animation:false,
+          layout: { padding: { top: 20 } },
           scales: {
             y: { type:'linear', position:'left', title:{display:true,text:'Produção (Kg)'} },
             y1: { type:'linear', position:'right', title:{display:true,text:'Perda (Kg/ha)'}, grid:{drawOnChartArea:false} }
           },
           plugins: {
             title: { display:true, text:'Produção x Perda por Talhão' },
-            legend: { display:true, position:'bottom' }
+            legend: { display:true, position:'bottom' },
+            datalabels: { display:true }
           }
         }
       });
