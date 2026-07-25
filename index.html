@@ -2502,9 +2502,11 @@
           labels: talhoesGrafico,
           datasets: [
             { type:'bar', label:'Produção (Kg Líquido)', data: talhoesGrafico.map(function(k){ return round2(prodPorTalhao[k]||0); }), backgroundColor:'#4c7a34', yAxisID:'y', order:2,
-              datalabels: { anchor:'end', align:'top', color:'#1f3a1f', font:{weight:'bold', size:10}, formatter: function(v){ return fmtNum(v,0); } } },
+              datalabels: { anchor:'end', align:'top', offset:4, color:'#ffffff', backgroundColor:'#1f3a1f', borderRadius:4,
+                padding:{top:2,bottom:2,left:5,right:5}, font:{weight:'bold', size:9}, formatter: function(v){ return fmtNum(v,0); } } },
             { type:'line', label:'Perda (Kg/ha média)', data: talhoesGrafico.map(function(k){ return round2(perdaPorTalhao[k]||0); }), borderColor:'#dba829', backgroundColor:'#dba829', yAxisID:'y1', tension:0.3, pointRadius:4, borderWidth:3, order:1,
-              datalabels: { anchor:'end', align:'top', color:'#8a6a10', font:{weight:'bold', size:10}, formatter: function(v){ return fmtNum(v,1); } } }
+              datalabels: { anchor:'end', align:'bottom', offset:6, color:'#3a2a05', backgroundColor:'#dba829', borderRadius:4,
+                padding:{top:2,bottom:2,left:5,right:5}, font:{weight:'bold', size:9}, formatter: function(v){ return fmtNum(v,1); } } }
           ]
         },
         options: {
