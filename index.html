@@ -2392,6 +2392,34 @@
       });
       y = doc.lastAutoTable.finalY + 6;
 
+      // ---- VOLUME E SACAS POR LOCAL DE ENTREGA ----
+      var gruposLocal = {}, ordemLocal = [];
+      producoes.forEach(function(c){
+        var k = c.localEntrega || '(não informado)';
+        if(!gruposLocal[k]){ gruposLocal[k] = {cargas:0, pesoLiquido:0, sacas:0}; ordemLocal.push(k); }
+        gruposLocal[k].cargas++;
+        gruposLocal[k].pesoLiquido += (c.pesoLiquido||0);
+        gruposLocal[k].sacas += (c.sacas||0);
+      });
+      ordemLocal.sort(function(a,b){ return gruposLocal[b].pesoLiquido - gruposLocal[a].pesoLiquido; });
+
+      if(y > 250){ doc.addPage(); y = 18; }
+      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(31,58,31);
+      doc.text('Volume e Sacas por Local de Entrega', 14, y); y += 5;
+
+      doc.autoTable({
+        startY: y,
+        head: [['Local de Entrega', 'Cargas', 'Volume Kg', 'Sacas']],
+        body: ordemLocal.length
+          ? ordemLocal.map(function(k){
+              var g = gruposLocal[k];
+              return [k, String(g.cargas), fmtNum(g.pesoLiquido,0), fmtNum(g.sacas,0)];
+            })
+          : [['Sem dados no recorte selecionado.', '', '', '']],
+        theme:'grid', headStyles:{fillColor:[76,122,52]}, styles:{fontSize:9}, margin:{left:14,right:14}
+      });
+      y = doc.lastAutoTable.finalY + 6;
+
       doc.autoTable({
         startY: y,
         head: [['Indicador', 'Valor']],
