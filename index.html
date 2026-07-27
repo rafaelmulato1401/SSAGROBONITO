@@ -1855,7 +1855,7 @@
     fotoStatus.className = 'foto-status';
 
     var apiKey = getApiKey();
-    var prompt = 'Você é um leitor de tickets de romaneio/pesagem de grãos do agronegócio brasileiro (armazéns, silos, cerealistas). '+
+    var prompt = 'Você é um leitor de tickets de romaneio/pesagem de grãos do agronegócio brasileiro (armazéns, silos, cerealistas, cooperativas como LAR). '+
       'Extraia os dados da imagem e responda SOMENTE com um JSON válido, sem texto extra, sem markdown, no formato exato:\n'+
       '{"cliente":string|null,"numeroCarga":string|null,"numeroRomaneio":string|null,"motorista":string|null,"placa":string|null,'+
       '"pesoBrutoCaminhao":number|null,"tara":number|null,"pesoBrutoCarga":number|null,'+
@@ -1864,7 +1864,11 @@
       '"localEntrega":string|null,"observacao":string|null}\n'+
       'Regras: todos os pesos em Kg, apenas números (sem "Kg", sem separador de milhar, use ponto decimal). '+
       '"pesoBrutoCarga" é o peso líquido do veículo (peso bruto do caminhão menos a tara) — o peso do produto ANTES dos descontos de qualidade. '+
-      '"descUmidadeKg","descImpurezaKg","descAvariadosKg" são os descontos em Kg já impressos no ticket (ex: coluna "Desc. Seco Kg"); se não houver valor impresso, retorne null. '+
+      '"descUmidadeKg","descImpurezaKg","descAvariadosKg" são os descontos em Kg já impressos no ticket (ex: coluna "Desc. Seco Kg" ou "Peso Descontado"); se não houver valor impresso, retorne null. '+
+      '"cliente" pode vir rotulado como "Cliente" ou como "Produtor" — use o que existir. '+
+      '"motorista" pode vir rotulado como "Nome Transportador" ou "Motorista"; se o ticket só tiver "Produtor" e nenhum campo de motorista/transportador, retorne null (não confunda com o produtor). '+
+      '"placa" só deve vir de um campo claramente rotulado como placa; se não houver rótulo de placa visível, retorne null (não invente a partir de outros códigos do ticket, como QR code ou numeração de armazenagem). '+
+      'Alguns tickets (ex: modelo LAR Cooperativa) têm DUAS colunas de percentual lado a lado, tipo "% Fazenda" e "% Verificado" — nesse caso use SEMPRE a coluna "% Verificado" (ou "Verificado") para umidade, impureza e avariados, nunca a coluna "Fazenda". '+
       '"txServico" é taxa de serviço, secagem ou armazenagem cobrada separada dos descontos de qualidade; se não houver, retorne 0. '+
       'Percentuais (umidade, impureza, avariados) como número puro, sem símbolo %. '+
       'Se um campo não existir no ticket, retorne null.';
